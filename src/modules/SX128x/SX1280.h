@@ -45,6 +45,12 @@ class SX1280: public SX1281 {
     */
     float getRangingResult();
 
+    /*!
+      \brief Gets raw ranging result of the last ranging exchange.
+      \returns Raw ranging result in meters.
+    */
+    float getRawRangingResult();
+
 #if !RADIOLIB_GODMODE
   private:
 #endif

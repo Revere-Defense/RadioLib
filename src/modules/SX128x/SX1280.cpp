@@ -181,4 +181,45 @@ float SX1280::getRangingResult() {
   return((float)raw * 150.0 / (4.096 * this->bandwidthKhz));
 }
 
+float SX1280::getRawRangingResult() {
+  // set mode to standby XOSC
+  int16_t state = standby(RADIOLIB_SX128X_STANDBY_XOSC);
+  RADIOLIB_ASSERT(state);
+
+  // enable clock
+  uint8_t data[4];
+  state = readRegister(RADIOLIB_SX128X_REG_RANGING_LORA_CLOCK_ENABLE, data, 1);
+  RADIOLIB_ASSERT(state);
+
+  data[0] |= (1 << 1);
+  state = writeRegister(RADIOLIB_SX128X_REG_RANGING_LORA_CLOCK_ENABLE, data, 1);
+  RADIOLIB_ASSERT(state);
+
+  // set result type to filtered
+  state = readRegister(RADIOLIB_SX128X_REG_RANGING_TYPE, data, 1);
+  RADIOLIB_ASSERT(state);
+
+  data[0] &= 0xCF;
+  // data[0] |= (1 << 4); // Commented out to get raw result instead of average RSSI filtered result
+  state = writeRegister(RADIOLIB_SX128X_REG_RANGING_TYPE, data, 1);
+  RADIOLIB_ASSERT(state);
+
+  // read the register values
+  state = readRegister(RADIOLIB_SX128X_REG_RANGING_RESULT_MSB, &data[0], 1);
+  RADIOLIB_ASSERT(state);
+  state = readRegister(RADIOLIB_SX128X_REG_RANGING_RESULT_MID, &data[1], 1);
+  RADIOLIB_ASSERT(state);
+  state = readRegister(RADIOLIB_SX128X_REG_RANGING_RESULT_LSB, &data[2], 1);
+  RADIOLIB_ASSERT(state);
+
+  // set mode to standby RC
+  state = standby();
+  RADIOLIB_ASSERT(state);
+
+  // calculate the real result
+  uint32_t uraw = ((uint32_t)data[0] << 16) | ((uint32_t)data[1] << 8) | data[2];
+  int32_t raw = (uraw & ((1UL << 23) - 1)) | (uraw >> 23 << 31);
+  return((float)raw * 150.0 / (4.096 * this->bandwidthKhz));
+}
+
 #endif
